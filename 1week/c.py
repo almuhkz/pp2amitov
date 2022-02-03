@@ -8,5 +8,4 @@ def toLowercase(s):
             s = s.replace(c , chr(g))
     return s
 print(toLowercase(s))
-#cpy ahaha
 #ili prosto print(s.lower())
