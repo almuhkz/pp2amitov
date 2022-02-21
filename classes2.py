@@ -1,18 +1,15 @@
 class Shape():
-    def __init__(self):
-        pass
+    def __init__(self, length, width):
+        self.length = length
+        self.width = width
     def area(self):
         self.area = 0
+        self.area = self.width * self.length
         print(self.area)
 class Square(Shape):
-    def __init__(self,length):
-        self.length = length
-    def area(self):
-        self.area = self.length **2
-        print(self.area)
-txt = int(input())
-figure = Square(txt)
+    def __init__(self, length, width):
+        super().__init__(length, width)
+        
+txt = int(input("Enter length: "))
+figure = Square(txt, txt)
 figure.area()
-
-
- 
