@@ -1,24 +1,19 @@
 class Shape():
-    area = 0
-    def __init__(self):
-      pass
+    def __init__(self, length,width):
+        self.length = length
+        self.width = width
     def area(self):
        self.area = 0
+       self.area = self.length * self.width
        print(self.area)
 class Rectangle(Shape):
     def __init__(self,length,width):
-        self.length= length
-        self.width=width
-    def area(self):
-        self.area = self.length * self.width
-        return self.area
+        super().__init__(length, width)
 class Square(Shape):
-    def __init__(self,length):
-        self.length = length
-    def area(self):
-        self.area = self.length **2
-        print(self.area)
+   def __init__(self,length,width):
+        super().__init__(length, width)
+    
 txt = input("Enter length and width of Rectangle: ")
 list = txt.split(" ")
 figure = Rectangle(length=int(list[0]) , width=int(list[1]))
-print(figure.area())
+figure.area()
