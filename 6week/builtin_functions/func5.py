@@ -1,0 +1,10 @@
+def tu(x):
+    return all(x)
+x = (1,1,1,1,1)
+y = (0,1,1,1,1)
+z = (True,True,True)
+m = (False,False,False)
+print(tu(x))
+print(tu(y))
+print(tu(z))
+print(tu(m))
