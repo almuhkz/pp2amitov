@@ -1,132 +1,198 @@
-from  tkinter import *
-import psycopg2
+from tkinter import *#almuh ispolzuet snova tkinter
+import tkinter as tk #uprostit
+from tkinter import ttk #vidzhet
+from tkinter import messagebox, filedialog  #dlya gui
+import psycopg2 #sql
+import csv
+import os
+
+mydata= [] #dlya csv
+
+
+
+def update(rows):
+    global mydata
+    mydata = rows
+    trv.delete(*trv.get_children())#tkinter treeview dlya tablic
+    for i in rows: 
+        trv.insert('', 'end', values=i)
+             
+def search():
+    q2 = q.get()
+    query= "SELECT id, first_name, last_name, phone_number FROM customers WHERE first_name LIKE '%"+q2+"%' OR last_name LIKE '%"+q2+"%' OR phone_number LIKE '%"+q2+"%'" 
+    cursor.execute(query) 
+    rows= cursor.fetchall()
+    update(rows)
+
+def clear():
+    query= "SELECT id, first_name, last_name, phone_number FROM customers"
+    cursor.execute(query)
+    rows = cursor.fetchall()
+    update(rows)
+
+def getrow(event):#otobrazhenie texta v secii customer
+    rowid = trv.identify_row(event.y)
+    item=trv.item(trv.focus())
+    t1.set(item['values'][0])
+    t2.set(item['values'][1]) 
+    t3.set(item['values'][2])
+    t4.set(item['values'][3])
+
+def update_customer():
+    fname = t2.get() 
+    lname= t3.get()
+    phone_number = t4.get()
+    custid = t1.get()
+    if messagebox.askyesno ("Confirm Please", "Are You Sure you want to update this customer?"): 
+        query= "UPDATE customers SET first_name = %s, last_name = %s, phone_number=%s WHERE id=%s" 
+        cursor.execute(query, (fname, lname, phone_number, custid))
+        mydb.commit()
+        clear()
+    else:
+        return True
+
+def add_new():
+    id = t1.get()
+    fname = t2.get()
+    lname = t3.get() 
+    phone_number = t4.get()
+    query= "INSERT INTO customers(id, first_name, last_name, phone_number) VALUES (NULL, %s, %s, %s)" 
+    cursor.execute(query, (fname, lname, phone_number))
+    mydb.commit()
+    clear()
+
+def delete_customer():
+    customer_id = t1.get()
+    if messagebox.askyesno("Confirm Delete?", "Are you sure you want to delete this customer?"): 
+        query= "DELETE FROM customers WHERE id= "+customer_id 
+        cursor.execute(query)
+        mydb.commit()
+        clear()
+    else:
+        return True
+
+def export():
+    if len(mydata) < 1:
+        messagebox.showerror("No Data", "No data available to export") 
+        return False
+    fln= filedialog.asksaveasfilename(initialdir = os.getcwd(), title="Save CSV", filetypes=(("CSV File", ".csv"), ("All Files", "*.*"))) 
+    with open(fln, mode='w') as myfile: 
+        exp_writer = csv.writer(myfile, delimiter=',')
+        for i in mydata:
+            exp_writer.writerow(1)
+    messagebox.showinfo("Data Exported", "Your data has been exported to "+os.path.basename(fln)+" successfully.")
+
+def importcsv():
+    mydata.clear()
+    fln= filedialog.askopenfilename(initialdir = os.getcwd(), title="Open CSV", filetypes=(("CSV File", ".csv"), ("ALL Files", "*.*")))
+    with open(fln) as myfile:
+        csvread = csv.reader(myfile, delimiter=",") 
+        for i in csvread:
+            mydata.append(i)
+
+def savedb():
+    if messagebox.askyesno("Confirmation", "Are you sure you want to save data to Database"):
+        for i in mydata: 
+            id = i[0]
+            fname = i[0]
+            lname = i[1]
+            phone_number=i[2]
+            query= "INSERT INTO customers( first_name, last_name, phone_number) VALUES ( %s, %s, %s)" 
+            cursor.execute(query, (fname, lname, phone_number)) 
+            mydb.commit()
+            clear()
+            messagebox.showinfo("Data Saved", "Data has been saved to database")
+    else:
+        return False 
+
+mydb= psycopg2.connect(host='localhost', database='postgres',port = '5432',user='postgres', password='almuh') 
+cursor= mydb.cursor()
+
 root = Tk()
-root.title('ALMUKHAMEDS PHONEBOOK')
-root.iconbitmap('C:\\Users\\amito\\OneDrive\\Documents\\PP2\\9week\\phonebook.png')
-root.geometry("700x750")
-def query():
-    config = psycopg2.connect(
-    host='localhost', 
-    database='postgres',
-    port = '5432',
-    user='postgres',
-    password='almuh'
-    )
-    c = config.cursor()
-#create phonebook table
-    c.execute('''CREATE TABLE IF NOT EXISTS customers
-    (c_id SERIAL PRIMARY KEY,
-    first_name TEXT,
-    last_name TEXT,
-    phone_number INTEGER)
-    ''')
-    config.commit()
-    config.close()
-def submit():
-    config = psycopg2.connect(
-    host='localhost', 
-    database='postgres',
-    port = '5432',
-    user='postgres',
-    password='almuh'
-    )
-    c = config.cursor()
-    #insert data
-    c.execute('''INSERT INTO customers (c_id , first_name, last_name, phone_number)
-    VALUES(%s, %s, %s, %s)''', (i_name.get(),f_name.get(),l_name.get(),p_name.get()
-    ))
-    config.commit()
-    config.close()
 
-def update():
-    config = psycopg2.connect(
-    host='localhost', 
-    database='postgres',
-    port = '5432',
-    user='postgres',
-    password='almuh'
-    )
-    c = config.cursor()
-    c.execute("SELECT * FROM customers")
-    records = c.fetchall()
-    output = ''
-    #loop cherez data
-    for record in records:
-        output_label.config(text=f'{output}\n{record[0]} {record[1]} {record[2]} {record[3]}')
-        output = output_label['text']
-    config.close()
-def edit():
-    config = psycopg2.connect(
-    host='localhost', 
-    database='postgres',
-    port = '5432',
-    user='postgres',
-    password='almuh'
-    )
-    c = config.cursor()
-    #insert data
-    sql ='''UPDATE customers set first_name = %s, phone_number=%s where c_id = %s'''
-    c.execute(sql,(f_name.get(),p_name.get(),i_name.get()))
-    config.commit()
-    update()
-    config.close()
-def delete():
-    config = psycopg2.connect(
-    host='localhost', 
-    database='postgres',
-    port = '5432',
-    user='postgres',
-    password='almuh'
-    )
-    c = config.cursor()
-    #insert data
-    sql ='''DELETE from customers where first_name=%s;'''
-    c.execute(sql,(f_name.get(),))
-    config.commit()
-    update()
-    config.close()
-# Create The GUI For The App
-my_frame = LabelFrame(root, text="Postgres PHONEBOOK BY ALMUH")
-my_frame.pack(pady=20)
+q = StringVar() 
+t1 =  StringVar() 
+t2 = StringVar()
+t3= StringVar()
+t4= StringVar()
 
-f_label= Label(my_frame, text="First Name:")
-f_label.grid (row=0, column=0, pady=10, padx=10)
-f_name = Entry(my_frame, font=("Impact, 18")) 
-f_name.grid (row=0, column=1, pady=10, padx=10)
+wrapper1= LabelFrame (root, text="Customer List")
+wrapper2 = LabelFrame (root, text="Search") 
+wrapper3 = LabelFrame (root, text="Customer Data")
 
-l_label= Label (my_frame, text="Last Name:")
-l_label.grid (row=1, column=0, pady=10, padx=10)
-l_name = Entry(my_frame, font=("Impact, 18")) 
-l_name.grid (row=1, column=1, pady=10, padx=10)
+wrapper1.pack(fill="both", expand="yes", padx=20, pady=10)
+wrapper2.pack(fill="both", expand="yes", padx=20, pady=10) 
+wrapper3.pack(fill="both", expand="yes", padx=20, pady=10)
 
-p_label= Label (my_frame, text="Phone Number:")
-p_label.grid (row=2, column=0, pady=10, padx=10)
-p_name = Entry(my_frame, font=("Impact, 18")) 
-p_name.grid (row=2, column=1, pady=10, padx=10)
+trv = ttk.Treeview(wrapper1, columns=(1,2,3,4), show="headings", height="6") 
+trv.pack()
 
-i_label= Label (my_frame, text="ID: ")
-i_label.grid (row=3, column=0, pady=10, padx=10)
-i_name = Entry(my_frame, font=("Impact, 18")) 
-i_name.grid (row=3, column=1, pady=10, padx=10)
+trv.heading(1, text="Customer ID")
+trv.heading(2, text="First Name") 
+trv.heading(3, text="Last Name")
+trv.heading(4, text="Phone Number")
 
-submit_button = Button (my_frame, text="Submit", command=submit)
-submit_button.grid(row=4, column=0, pady=10, padx=10)
+trv.bind('<Double 1>', getrow)
+expbtn= Button(wrapper1, text="Export CSV", command=export) 
+expbtn.pack(side=tk.LEFT, padx=10, pady=10)
 
-update_button = Button (my_frame, text="Update", command=update)
-update_button.grid (row=4, column=1, pady=10, padx=10)
+impbtn = Button (wrapper1, text="Import CSV", command=importcsv) 
+impbtn.pack(side=tk.LEFT, padx=10, pady=10)
 
-edit_button = Button (my_frame, text="EDIT DATA", command=edit)
-edit_button.grid (row=4, column=2, pady=10, padx=10)
+savebtn = Button (wrapper1, text="Save Data", command=savedb) 
+savebtn.pack(side=tk.LEFT, padx=10, pady=10)
 
-edit_button = Button (my_frame, text="DELETE CUSTOMER", command=delete)
-edit_button.grid (row=4, column=2, pady=10, padx=10)
+extbtn = Button (wrapper1, text="Exit", command=lambda: exit()) 
+extbtn.pack(side=tk.LEFT, padx=10, pady=10)
+
+query= "SELECT id, first_name, last_name, phone_number from customers"
+cursor.execute(query)
+rows = cursor.fetchall()
+update(rows)
 
 
-#dropall_button = Button (my_frame, text="DROP ALL DATA", command=drop)
-#dropall_button.grid (row=3, column=2, pady=10, padx=10)
+#Search Section
+lbl = Label(wrapper2, text="Search")
+lbl.pack(side=tk. LEFT, padx=10)
 
-output_label= Label (root, text="")
-output_label.pack(pady=50)
+ent = Entry(wrapper2, textvariable=q)
+ent.pack(side=tk. LEFT, padx=6)
 
-query()
+btn= Button(wrapper2, text="Search", command=search)
+btn.pack(side= tk. LEFT, padx=6)
+
+#User Data Section
+lbl1 = Label(wrapper3, text="Customer ID") 
+lbl1.grid(row=0, column=0, padx=5, pady=3)
+ent1 = Entry(wrapper3, textvariable=t1)
+ent1.grid(row=0, column=1, padx=5, pady=3) 
+
+lbl2= Label(wrapper3, text="First Name") 
+lbl2.grid(row=1, column=0, padx=5, pady=3)
+ent2= Entry(wrapper3, textvariable=t2)
+ent2.grid(row=1, column=1, padx=5, pady=3)
+
+lbl3 = Label (wrapper3, text="Last Name") 
+lbl3.grid(row=2, column=0, padx=5, pady=3) 
+ent3 = Entry(wrapper3, textvariable=t3) 
+ent3.grid(row=2, column=1, padx=5, pady=3)
+
+lbl4 = Label (wrapper3, text="Phone Number") 
+lbl4.grid(row=3, column=0, padx=5, pady=3) 
+ent4 = Entry(wrapper3, textvariable=t4) 
+ent4.grid(row=3, column=1, padx=5, pady=3)
+
+
+up_btn = Button (wrapper3, text="Update", command=update_customer) 
+add_btn= Button (wrapper3, text="Add New", command=add_new) 
+delete_btn= Button (wrapper3, text="Delete", command=delete_customer)
+
+add_btn.grid(row=4, column=0, padx=5, pady=3) 
+up_btn.grid (row=4, column=1, padx=5, pady=3) 
+delete_btn.grid (row=4, column=2, padx=5, pady=3)
+
+
+root.title("ALMUKHAMEDS PHONEBOOK") 
+root.geometry("800x700") 
+
 root.mainloop()
