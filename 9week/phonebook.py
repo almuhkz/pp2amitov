@@ -194,5 +194,5 @@ delete_btn.grid (row=4, column=2, padx=5, pady=3)
 
 root.title("ALMUKHAMEDS PHONEBOOK") 
 root.geometry("800x700") 
-
+root.iconbitmap(r'phonebook.ico')
 root.mainloop()
